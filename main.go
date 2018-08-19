@@ -36,7 +36,7 @@ func populateTemplates() map[string]*template.Template {
 	if err != nil {
 		panic("Failed to open template blocks directory: " + err.Error())
 	}
-	fis, err := dir.Readdir(01)
+	fis, err := dir.Readdir(-1)
 	if err != nil {
 		panic("Failed to read contents of content directory: " + err.Error())
 	}
