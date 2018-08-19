@@ -1,34 +1,33 @@
 package main
 
 import (
-	"io"
+	"html/template"
 	"log"
 	"net/http"
-	"os"
-	"strings"
 )
 
 func main() {
+	templates := populateTemplates()
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		f, err := os.Open("public" + r.URL.Path)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			log.Println(err)
+		requestedFile := r.URL.Path[1:]
+		t := templates.Lookup(requestedFile + ".html")
+		if t != nil {
+			err := t.Execute(w, nil)
+			if err != nil {
+				log.Println(err)
+			}
+		} else {
+			w.WriteHeader(http.StatusNotFound)
 		}
-		defer f.Close()
-		var contentType string
-		switch {
-		case strings.HasSuffix(r.URL.Path, "css"):
-			contentType = "text/css"
-		case strings.HasSuffix(r.URL.Path, "html"):
-			contentType = "text/html"
-		case strings.HasSuffix(r.URL.Path, "png"):
-			contentType = "image/png"
-		default:
-			contentType = "text/plain"
-		}
-		w.Header().Add("Contet-Type", contentType)
-		io.Copy(w, f)
 	})
-	http.ListenAndServe(":8000", nil)
+	http.Handle("/img/", http.FileServer(http.Dir("public")))
+	http.Handle("/css/", http.FileServer(http.Dir("public")))
+	http.ListenAndServe(":8080", nil)
+}
+
+func populateTemplates() *template.Template {
+	result := template.New("templates")
+	const basePath = "templates"
+	template.Must(result.ParseGlob(basePath + "/*.html"))
+	return result
 }
